@@ -22,6 +22,10 @@
 				"name": "Chat",
 				"class_name": "Chat"
 			}
+			// {
+			// 	"name": "RepoRoom",
+			// 	"class_name": "RepoRoom"
+			// }
 		]
 	},
 	"migrations": [
@@ -32,6 +36,42 @@
 			]
 		}
 	],
+	"kv_namespaces": [
+		{
+			"binding": "STATUS_KV",
+			"id": "96f9fe232eb948fc8c82891415af497e",
+			"preview_id": "30523c0ed1ca4e6c9b11979f1bb4b6b6"
+		}
+	],
+	"r2_buckets": [
+		{
+			"bucket_name": "cf-ai-repo-snapshots",
+			"binding": "cf_ai_repo_snapshots"
+		}
+	],
+	"vectorize": [
+		{
+			"binding": "VECTORIZE",
+			"index_name": "cf-ai-repo-index"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "cf_ai",
+			"database_name": "cf_ai",
+			"database_id": "e09d5b4c-a738-433e-a886-f0f854d3d358"
+		}
+	],
+	// "workflows": [
+	// 	{
+	// 		"name": "INGEST_WORKFLOW",
+	// 		"binding": "INGEST_WORKFLOW",
+	// 		"class_name": "IngestWorkflow"
+	// 	}
+	// ],
+	"vars": {
+		"ALLOWED_REPO_HOSTS": "github.com,gitlab.com"
+	},
 	"observability": {
 		"enabled": true
 	}

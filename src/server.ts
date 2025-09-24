@@ -13,12 +13,17 @@ import {
   createUIMessageStreamResponse,
   type ToolSet
 } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createWorkersAI } from 'workers-ai-provider';
 import { processToolCalls, cleanupMessages } from "./utils";
 import { tools, executions } from "./tools";
-// import { env } from "cloudflare:workers";
+import { env } from "cloudflare:workers";
+import type { StorageEnv } from "./storage";
 
-const model = openai("gpt-4o-2024-11-20");
+const workersai = createWorkersAI({ binding: env.AI });
+const model = workersai('@cf/meta/llama-3.1-8b-instruct', {
+  // additional settings
+  safePrompt: true,
+});
 // Cloudflare AI Gateway
 // const openai = createOpenAI({
 //   apiKey: env.OPENAI_API_KEY,
@@ -111,6 +116,86 @@ If the user asks to schedule a task, use the schedule tool to schedule the task.
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext) {
     const url = new URL(request.url);
+
+    // Test endpoints for GitHub integration
+    if (url.pathname === "/test/ingest") {
+      const { handleTestIngest } = await import("./routes/test");
+      return handleTestIngest(request, env);
+    }
+
+    if (url.pathname === "/test/status") {
+      const { handleTestStatus } = await import("./routes/test");
+      return handleTestStatus(request, env);
+    }
+
+    if (url.pathname === "/test/tutorials") {
+      const { handleTestTutorials } = await import("./routes/test");
+      return handleTestTutorials(request, env);
+    }
+
+    // Debug endpoints
+    if (url.pathname === "/debug/repos") {
+      const { handleDebugRepos } = await import("./routes/debug");
+      return handleDebugRepos(request, env);
+    }
+
+    if (url.pathname === "/debug/commits") {
+      const { handleDebugCommits } = await import("./routes/debug");
+      return handleDebugCommits(request, env);
+    }
+
+    if (url.pathname === "/debug/clear") {
+      const { handleDebugClearRepo } = await import("./routes/debug");
+      return handleDebugClearRepo(request, env);
+    }
+
+    // Tutorial endpoints
+    if (url.pathname === "/tutorials" && request.method === "GET") {
+      const { handleGetTutorials } = await import("./routes/tutorials");
+      return handleGetTutorials(request, env);
+    }
+
+    if (url.pathname === "/tutorials" && request.method === "POST") {
+      const { handleCreateTutorial } = await import("./routes/tutorials");
+      return handleCreateTutorial(request, env);
+    }
+
+    if (url.pathname.startsWith("/tutorials/") && request.method === "GET") {
+      const { handleGetTutorial } = await import("./routes/tutorials");
+      return handleGetTutorial(request, env);
+    }
+
+    if (url.pathname === "/sessions" && request.method === "POST") {
+      const { handleStartSession } = await import("./routes/tutorials");
+      return handleStartSession(request, env);
+    }
+
+    if (url.pathname.match(/^\/sessions\/[^\/]+\/action$/) && request.method === "POST") {
+      const { handleSessionAction } = await import("./routes/tutorials");
+      return handleSessionAction(request, env);
+    }
+
+    if (url.pathname === "/generate-tutorials" && request.method === "POST") {
+      const { handleGenerateTutorials } = await import("./routes/tutorials");
+      return handleGenerateTutorials(request, env);
+    }
+
+    // API endpoints
+    if (url.pathname === "/api/file-content" && request.method === "POST") {
+      const { handleGetFileContent } = await import("./routes/tutorials");
+      return handleGetFileContent(request, env);
+    }
+
+    // Workspace endpoints
+    if (url.pathname.startsWith("/api/workspace/") && request.method === "GET") {
+      const { handleGetWorkspace } = await import("./routes/workspace");
+      return handleGetWorkspace(request, env);
+    }
+
+    if (url.pathname === "/api/workspace" && request.method === "POST") {
+      const { handleCreateWorkspace } = await import("./routes/workspace");
+      return handleCreateWorkspace(request, env);
+    }
 
     if (url.pathname === "/check-open-ai-key") {
       const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
