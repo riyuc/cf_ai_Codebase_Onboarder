@@ -1,7 +1,7 @@
 {
-	"name": "cloudflare-agent-starter",
+	"name": "codebase-onboarder",
 	"version": "1.0.0",
-	"description": "",
+	"description": "AI-powered codebase learning platform that turns GitHub commits into interactive tutorials",
 	"type": "module",
 	"private": true,
 	"scripts": {
@@ -15,7 +15,12 @@
 	"keywords": [
 		"cloudflare",
 		"ai",
-		"agents"
+		"tutorials",
+		"education",
+		"codebase",
+		"learning",
+		"monaco-editor",
+		"workers-ai"
 	],
 	"author": "",
 	"license": "MIT",

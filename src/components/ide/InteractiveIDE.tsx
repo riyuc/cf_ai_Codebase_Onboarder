@@ -46,6 +46,7 @@ export function InteractiveIDE({
   const [selectedFile, setSelectedFile] = useState<FileNode | undefined>();
   const [theme, setTheme] = useState<'vs-dark' | 'light'>('vs-dark');
   const [currentCodeSelection, setCurrentCodeSelection] = useState<any>();
+  const [codebaseContext, setCodebaseContext] = useState<any>(null);
 
   useEffect(() => {
     // Create a realistic workspace that simulates the actual repository
@@ -67,6 +68,29 @@ export function InteractiveIDE({
           
           if (data.success && data.workspace?.files) {
             console.log('SUCCESS: Using real repository files!', data.workspace.files.length, 'files');
+            
+            // Analyze codebase context for better AI guidance
+            try {
+              const analysisResponse = await fetch('/api/ai/codebase-analysis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileTree: data.workspace.files,
+                  repository: tutorial.repoData
+                })
+              });
+              
+              if (analysisResponse.ok) {
+                const analysisData = await analysisResponse.json() as any;
+                if (analysisData.success) {
+                  console.log('Codebase context analyzed:', analysisData.codebaseContext);
+                  setCodebaseContext(analysisData.codebaseContext);
+                }
+              }
+            } catch (error) {
+              console.warn('Failed to analyze codebase context:', error);
+            }
+            
             return data.workspace.files;
           } else {
             console.warn('API succeeded but no workspace files found:', data);
@@ -425,9 +449,66 @@ export function InteractiveIDE({
                 fileName={selectedFile.name}
                 theme={theme}
                 onSelectionChange={setCurrentCodeSelection}
-                onAIRequest={(action, selection) => {
+                onAIRequest={async (action, selection) => {
                   console.log('AI Request:', action, 'Selection:', selection);
-                  // This will trigger AI actions based on selected code
+                  
+                  try {
+                    let response;
+                    
+                    switch (action) {
+                      case 'explain':
+                        response = await fetch('/api/ai/code-analysis', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            code: selection?.text || '',
+                            fileName: selectedFile?.name || 'unknown',
+                            language: 'javascript',
+                            tutorialStep: currentStep.title,
+                            codebaseContext
+                          })
+                        });
+                        if (response.ok) {
+                          const data = await response.json() as any;
+                          alert(`AI Explanation:\n\n${data.analysis?.explanation || 'No explanation available'}`);
+                        }
+                        break;
+                        
+                      case 'improve':
+                        response = await fetch('/api/ai/code-analysis', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            code: selection?.text || '',
+                            fileName: selectedFile?.name || 'unknown',
+                            language: 'javascript',
+                            tutorialStep: currentStep.title,
+                            codebaseContext
+                          })
+                        });
+                        if (response.ok) {
+                          const data = await response.json() as any;
+                          const improvements = data.analysis?.improvements || [];
+                          alert(`AI Improvements:\n\n${improvements.join('\n• ')}`);
+                        }
+                        break;
+                        
+                      case 'chat':
+                        // Open AI chat with selected code context
+                        const chatMessage = prompt('Ask about the selected code:', selection?.text || '');
+                        if (chatMessage) {
+                          // This would integrate with the AI Assistant
+                          console.log('AI Chat:', chatMessage, 'Context:', selection);
+                        }
+                        break;
+                        
+                      default:
+                        console.log('AI Action not implemented:', action);
+                    }
+                  } catch (error) {
+                    console.error('AI request failed:', error);
+                    alert('AI service temporarily unavailable. Please try again.');
+                  }
                 }}
               />
             ) : (
@@ -447,8 +528,62 @@ export function InteractiveIDE({
             tutorial={tutorial}
             currentStep={currentStep}
             stepNumber={stepNumber}
-            onGetCodeExample={async () => `// AI-generated example for: ${currentStep.title}\n// Selected code: ${currentCodeSelection?.text || 'No selection'}`}
-            onValidateImplementation={handleValidateCode}
+            codebaseContext={codebaseContext}
+            onGetCodeExample={async () => {
+              // Call real AI for code examples
+              try {
+                const response = await fetch('/api/ai/code-example', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    step: currentStep.title,
+                    language: 'javascript',
+                    selectedCode: currentCodeSelection?.text,
+                    repository: `${tutorial.repoData.owner}/${tutorial.repoData.repo}`
+                  })
+                });
+                
+                if (response.ok) {
+                  const data = await response.json() as any;
+                  return data.example || '// AI-generated example coming soon...';
+                }
+              } catch (error) {
+                console.error('Failed to get AI code example:', error);
+              }
+              
+              return `// AI-generated example for: ${currentStep.title}\n// Selected code: ${currentCodeSelection?.text || 'No selection'}`;
+            }}
+            onValidateImplementation={async (code: string) => {
+              // Call real AI for code validation
+              try {
+                const response = await fetch('/api/ai/code-analysis', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    code,
+                    fileName: selectedFile?.name || 'unknown',
+                    language: 'javascript',
+                    tutorialStep: currentStep.title,
+                    codebaseContext
+                  })
+                });
+                
+                if (response.ok) {
+                  const data = await response.json() as any;
+                  return {
+                    isValid: true,
+                    feedback: data.analysis?.explanation || 'Code looks good!'
+                  };
+                }
+              } catch (error) {
+                console.error('Failed to validate code with AI:', error);
+              }
+              
+              // Fallback to mock validation
+              return handleValidateCode(code);
+            }}
+            selectedCode={currentCodeSelection?.text}
+            fileName={selectedFile?.name}
           />
         </div>
       </div>

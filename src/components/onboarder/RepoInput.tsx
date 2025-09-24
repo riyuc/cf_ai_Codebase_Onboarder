@@ -50,7 +50,7 @@ export function RepoInput({ onRepoSubmit, loading, error }: RepoInputProps) {
               type="url"
               placeholder="https://github.com/owner/repository"
               value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
+              onValueChange={(value) => setRepoUrl(value)}
               disabled={loading}
               className="w-full"
             />

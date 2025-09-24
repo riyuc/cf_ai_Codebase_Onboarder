@@ -3,8 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, FileText, FolderPlus } from 'lucide-react';
-import { Button } from '@/components/button/Button';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react';
 
 export interface FileNode {
   id: string;

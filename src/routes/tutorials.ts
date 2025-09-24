@@ -1,6 +1,7 @@
 import { TutorialService } from '../tutorial';
 import { GitHubService } from '../github';
 import { createStorageService } from '../storage';
+import { AIService } from '../ai/service';
 import type { StorageEnv } from '../storage';
 
 export async function handleGetFileContent(request: Request, env: StorageEnv): Promise<Response> {
@@ -49,7 +50,8 @@ export async function handleGetTutorials(request: Request, env: StorageEnv): Pro
 
     const storage = createStorageService(env);
     const github = new GitHubService();
-    const tutorialService = new TutorialService(github, storage);
+    const aiService = new AIService(env as Env);
+    const tutorialService = new TutorialService(github, storage, aiService);
 
     const tutorials = await tutorialService.getRepositoryTutorials(repoId);
 
@@ -85,7 +87,8 @@ export async function handleCreateTutorial(request: Request, env: StorageEnv): P
 
     const storage = createStorageService(env);
     const github = new GitHubService();
-    const tutorialService = new TutorialService(github, storage);
+    const aiService = new AIService(env as Env);
+    const tutorialService = new TutorialService(github, storage, aiService);
 
     const result = await tutorialService.createTutorial(commitId);
 
@@ -122,7 +125,8 @@ export async function handleGetTutorial(request: Request, env: StorageEnv): Prom
 
     const storage = createStorageService(env);
     const github = new GitHubService();
-    const tutorialService = new TutorialService(github, storage);
+    const aiService = new AIService(env as Env);
+    const tutorialService = new TutorialService(github, storage, aiService);
 
     const { tutorial, content } = await tutorialService.getTutorial(tutorialId);
 
@@ -165,7 +169,8 @@ export async function handleStartSession(request: Request, env: StorageEnv): Pro
 
     const storage = createStorageService(env);
     const github = new GitHubService();
-    const tutorialService = new TutorialService(github, storage);
+    const aiService = new AIService(env as Env);
+    const tutorialService = new TutorialService(github, storage, aiService);
 
     const session = await tutorialService.startSession(tutorialId);
 
@@ -208,7 +213,8 @@ export async function handleSessionAction(request: Request, env: StorageEnv): Pr
 
     const storage = createStorageService(env);
     const github = new GitHubService();
-    const tutorialService = new TutorialService(github, storage);
+    const aiService = new AIService(env as Env);
+    const tutorialService = new TutorialService(github, storage, aiService);
 
     let session;
     
@@ -267,7 +273,8 @@ export async function handleGenerateTutorials(request: Request, env: StorageEnv)
 
     const storage = createStorageService(env);
     const github = new GitHubService();
-    const tutorialService = new TutorialService(github, storage);
+    const aiService = new AIService(env as Env);
+    const tutorialService = new TutorialService(github, storage, aiService);
 
     const tutorials = await tutorialService.generateRepositoryTutorials(repoId, limit);
 

@@ -4,8 +4,9 @@
 
 import type { GitHubService } from '../github';
 import type { StorageService } from '../storage';
-import type { Commit, Tutorial } from '../storage/database';
+import type { Tutorial } from '../storage/database';
 import type { TutorialContent } from '../storage/r2';
+import type { AIService } from '../ai/service';
 import { generateId } from 'ai';
 
 export interface TutorialStep {
@@ -24,7 +25,7 @@ export class TutorialGenerator {
   constructor(
     private github: GitHubService,
     public storage: StorageService,
-    private aiModel: any // AI model for generating content
+    private aiService: AIService
   ) {}
 
   /**
@@ -74,8 +75,16 @@ export class TutorialGenerator {
       }
     }
 
-    // Generate tutorial content using AI
-    const tutorialContent = await this.generateTutorialContent(targetCommit, fullCommit, repository);
+    // Analyze codebase context for better AI guidance
+    const codebaseContext = await this.aiService.analyzeCodebase(fileTree, repository);
+
+    // Generate tutorial content using AI with codebase context
+    const tutorialContent = await this.aiService.generateTutorialContent(
+      targetCommit, 
+      fullCommit.files || [], 
+      repository,
+      codebaseContext
+    );
 
     // Create tutorial record
     const tutorialId = generateId();
@@ -86,10 +95,20 @@ export class TutorialGenerator {
       description: tutorialContent.description
     });
 
+    // Convert AI steps to our format
+    const steps = tutorialContent.steps.map((step, index) => ({
+      id: generateId(),
+      title: step.title,
+      description: step.description,
+      instructions: step.instructions,
+      codeExample: step.codeExample,
+      hints: step.hints
+    }));
+
     // Store tutorial content in R2
     const content: TutorialContent = {
       tutorial_id: tutorialId,
-      steps: tutorialContent.steps,
+      steps,
       fileTree, // Add file tree to tutorial content
       parentSha
     };
@@ -102,202 +121,7 @@ export class TutorialGenerator {
     };
   }
 
-  /**
-   * Generate tutorial content using AI
-   */
-  private async generateTutorialContent(
-    commit: Commit, 
-    fullCommit: any, 
-    repository: any
-  ): Promise<{
-    title: string;
-    description: string;
-    steps: TutorialStep[];
-  }> {
-    // Build context for AI
-    const context = this.buildContext(commit, fullCommit, repository);
-    
-    // Generate tutorial using AI
-    const prompt = this.buildTutorialPrompt(context);
-    
-    // For MVP, let's create a simple template-based tutorial
-    // In production, this would call the AI model
-    return this.generateSimpleTutorial(context);
-  }
-
-  /**
-   * Build context about the commit for AI generation
-   */
-  private buildContext(commit: Commit, fullCommit: any, repository: any): any {
-    return {
-      commit: {
-        sha: commit.sha,
-        message: commit.message,
-        author: commit.author,
-        date: commit.date
-      },
-      repository: {
-        name: repository.name,
-        url: repository.github_url
-      },
-      files: fullCommit.files || [],
-      stats: fullCommit.stats || { additions: 0, deletions: 0, total: 0 }
-    };
-  }
-
-  /**
-   * Build AI prompt for tutorial generation
-   */
-  private buildTutorialPrompt(context: any): string {
-    return `
-You are an expert coding instructor. Create a step-by-step tutorial for a newcomer to implement the same feature that was added in this commit.
-
-COMMIT DETAILS:
-- Message: ${context.commit.message}
-- Author: ${context.commit.author}
-- Repository: ${context.repository.name}
-- Files changed: ${context.files.length}
-- Lines changed: ${context.stats.total}
-
-FILES CHANGED:
-${context.files.map((f: any) => `- ${f.filename} (${f.status}): +${f.additions} -${f.deletions}`).join('\n')}
-
-Create a tutorial with:
-1. A clear title that explains what the learner will build
-2. A brief description of the learning outcome
-3. 3-5 step-by-step instructions that guide the learner to implement the same feature
-4. Each step should be actionable and specific
-
-Focus on teaching the patterns and concepts, not just copying code.
-`;
-  }
-
-  /**
-   * Generate a simple template-based tutorial (MVP version)
-   */
-  private generateSimpleTutorial(context: any): {
-    title: string;
-    description: string;
-    steps: TutorialStep[];
-  } {
-    // Extract key info from commit message
-    const message = context.commit.message;
-    const isFeature = message.toLowerCase().includes('add') || message.toLowerCase().includes('implement');
-    const isFix = message.toLowerCase().includes('fix') || message.toLowerCase().includes('bug');
-
-    // Generate title based on commit type
-    let title = '';
-    if (isFeature) {
-      title = `Implement: ${message.split('\n')[0]}`;
-    } else if (isFix) {
-      title = `Fix: ${message.split('\n')[0]}`;
-    } else {
-      title = `Learn: ${message.split('\n')[0]}`;
-    }
-
-    // Generate description
-    const description = `Learn how to implement the changes from commit ${context.commit.sha.substring(0, 8)} by ${context.commit.author}. ` +
-      `This tutorial will guide you through the same implementation process.`;
-
-    // Generate simple steps based on files changed
-    const steps: TutorialStep[] = [];
-
-    if (context.files.length === 0) {
-      // No files information, create generic steps
-      steps.push(
-        {
-          id: generateId(),
-          title: 'Understand the Problem',
-          description: 'Review what needs to be implemented',
-          instructions: `Study the commit message: "${message}". Research what this change accomplishes and why it was needed.`
-        },
-        {
-          id: generateId(),
-          title: 'Plan Your Implementation',
-          description: 'Break down the implementation approach',
-          instructions: 'Think about what files might need to be changed and what the implementation approach should be.'
-        },
-        {
-          id: generateId(),
-          title: 'Implement the Change',
-          description: 'Write the code to accomplish the same goal',
-          instructions: 'Implement the feature following the same patterns used in the original commit.'
-        },
-        {
-          id: generateId(),
-          title: 'Test Your Implementation',
-          description: 'Verify that your implementation works',
-          instructions: 'Test your implementation to ensure it works correctly and follows the same behavior as the original commit.'
-        }
-      );
-    } else {
-      // Create steps based on actual files changed
-      steps.push({
-        id: generateId(),
-        title: 'Understand the Changes',
-        description: 'Review what files were modified and why',
-        instructions: `This commit modified ${context.files.length} file(s): ${context.files.map((f: any) => f.filename).join(', ')}. ` +
-          `Study each file to understand what changes were made.`
-      });
-
-      // Group files by type for better step organization
-      const filesByType = this.groupFilesByType(context.files);
-      
-      Object.entries(filesByType).forEach(([type, files]: [string, any]) => {
-        steps.push({
-          id: generateId(),
-          title: `Modify ${type} Files`,
-          description: `Update the ${type} files as shown in the commit`,
-          instructions: `Work on the following ${type} files: ${files.map((f: any) => f.filename).join(', ')}. ` +
-            `Follow the same patterns shown in the original commit.`
-        });
-      });
-
-      steps.push({
-        id: generateId(),
-        title: 'Verify Your Implementation',
-        description: 'Test that your changes work correctly',
-        instructions: 'Run tests and verify that your implementation matches the expected behavior from the original commit.'
-      });
-    }
-
-    return {
-      title,
-      description,
-      steps
-    };
-  }
-
-  /**
-   * Group files by type for better step organization
-   */
-  private groupFilesByType(files: any[]): Record<string, any[]> {
-    const groups: Record<string, any[]> = {};
-
-    files.forEach(file => {
-      const ext = file.filename.split('.').pop()?.toLowerCase() || 'other';
-      
-      let type = 'Other';
-      if (['js', 'ts', 'jsx', 'tsx'].includes(ext)) {
-        type = 'JavaScript/TypeScript';
-      } else if (['css', 'scss', 'sass'].includes(ext)) {
-        type = 'Styles';
-      } else if (['html', 'jsx', 'tsx'].includes(ext)) {
-        type = 'Templates';
-      } else if (['json', 'yml', 'yaml'].includes(ext)) {
-        type = 'Configuration';
-      } else if (['md', 'txt'].includes(ext)) {
-        type = 'Documentation';
-      }
-
-      if (!groups[type]) {
-        groups[type] = [];
-      }
-      groups[type].push(file);
-    });
-
-    return groups;
-  }
+  // Removed - now using AIService directly
 
   /**
    * Get all tutorials for a repository

@@ -17,7 +17,6 @@ import { createWorkersAI } from 'workers-ai-provider';
 import { processToolCalls, cleanupMessages } from "./utils";
 import { tools, executions } from "./tools";
 import { env } from "cloudflare:workers";
-import type { StorageEnv } from "./storage";
 
 const workersai = createWorkersAI({ binding: env.AI });
 const model = workersai('@cf/meta/llama-3.1-8b-instruct', {
@@ -117,22 +116,6 @@ export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext) {
     const url = new URL(request.url);
 
-    // Test endpoints for GitHub integration
-    if (url.pathname === "/test/ingest") {
-      const { handleTestIngest } = await import("./routes/test");
-      return handleTestIngest(request, env);
-    }
-
-    if (url.pathname === "/test/status") {
-      const { handleTestStatus } = await import("./routes/test");
-      return handleTestStatus(request, env);
-    }
-
-    if (url.pathname === "/test/tutorials") {
-      const { handleTestTutorials } = await import("./routes/test");
-      return handleTestTutorials(request, env);
-    }
-
     // Debug endpoints
     if (url.pathname === "/debug/repos") {
       const { handleDebugRepos } = await import("./routes/debug");
@@ -195,6 +178,37 @@ export default {
     if (url.pathname === "/api/workspace" && request.method === "POST") {
       const { handleCreateWorkspace } = await import("./routes/workspace");
       return handleCreateWorkspace(request, env);
+    }
+
+    // AI endpoints
+    if (url.pathname === "/api/ai-assist" && request.method === "POST") {
+      const { handleAIAssist } = await import("./routes/ai");
+      return handleAIAssist(request, env);
+    }
+
+    if (url.pathname === "/api/ai/help" && request.method === "POST") {
+      const { handleAIHelp } = await import("./routes/ai");
+      return handleAIHelp(request, env);
+    }
+
+    if (url.pathname === "/api/ai/code-analysis" && request.method === "POST") {
+      const { handleCodeAnalysis } = await import("./routes/ai");
+      return handleCodeAnalysis(request, env);
+    }
+
+    if (url.pathname === "/api/ai/code-example" && request.method === "POST") {
+      const { handleCodeExample } = await import("./routes/ai");
+      return handleCodeExample(request, env);
+    }
+
+    if (url.pathname === "/api/ai/codebase-analysis" && request.method === "POST") {
+      const { handleCodebaseAnalysis } = await import("./routes/ai");
+      return handleCodebaseAnalysis(request, env);
+    }
+
+    if (url.pathname === "/api/ai/related-examples" && request.method === "POST") {
+      const { handleRelatedCodeExamples } = await import("./routes/ai");
+      return handleRelatedCodeExamples(request, env);
     }
 
     if (url.pathname === "/check-open-ai-key") {

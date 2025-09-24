@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/button/Button';
 import { Card } from '@/components/card/Card';
 import { Textarea } from '@/components/textarea/Textarea';
-import { Bot, Send, Lightbulb, Code2, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bot, Send, Lightbulb, Code2, CheckCircle } from 'lucide-react';
 
 interface AIMessage {
   id: string;
@@ -29,6 +29,9 @@ interface TutorialAssistantProps {
   stepNumber: number;
   onGetCodeExample: () => Promise<string>;
   onValidateImplementation: (userCode: string) => Promise<{ isValid: boolean; feedback: string }>;
+  selectedCode?: string;
+  fileName?: string;
+  codebaseContext?: any;
 }
 
 export function TutorialAssistant({
@@ -36,7 +39,10 @@ export function TutorialAssistant({
   currentStep,
   stepNumber,
   onGetCodeExample,
-  onValidateImplementation
+  onValidateImplementation,
+  selectedCode,
+  fileName,
+  codebaseContext
 }: TutorialAssistantProps) {
   const [messages, setMessages] = useState<AIMessage[]>([
     {
@@ -68,7 +74,7 @@ export function TutorialAssistant({
     setLoading(true);
 
     try {
-      // Call AI assistance API
+      // Call AI assistance API with codebase context
       const response = await fetch('/api/ai-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,7 +85,8 @@ export function TutorialAssistant({
           context: {
             repo: `${tutorial.repoData.owner}/${tutorial.repoData.repo}`,
             step: currentStep,
-            tutorial: tutorial.title
+            tutorial: tutorial.title,
+            codebaseContext
           }
         })
       });

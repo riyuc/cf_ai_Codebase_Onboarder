@@ -6,6 +6,7 @@ import { TutorialGenerator } from './generator';
 import type { GitHubService } from '../github';
 import type { StorageService } from '../storage';
 import type { LearnerSession } from '../storage/database';
+import type { AIService } from '../ai/service';
 import { generateId } from 'ai';
 
 export interface TutorialSession {
@@ -23,9 +24,9 @@ export class TutorialService {
   constructor(
     github: GitHubService,
     storage: StorageService,
-    aiModel?: any
+    aiService: AIService
   ) {
-    this.generator = new TutorialGenerator(github, storage, aiModel);
+    this.generator = new TutorialGenerator(github, storage, aiService);
   }
 
   /**

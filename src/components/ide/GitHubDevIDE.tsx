@@ -2,7 +2,7 @@
  * GitHub.dev IDE integration component
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/button/Button';
 import { Card } from '@/components/card/Card';
 import { TutorialAssistant } from '../ai/TutorialAssistant';

@@ -2,7 +2,7 @@
  * Enhanced Monaco Editor with Cursor-like AI features
  */
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 

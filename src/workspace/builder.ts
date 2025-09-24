@@ -254,7 +254,7 @@ Use the AI assistant panel for hints and guidance!
     try {
       const stored = await this.storage.r2.get(`workspaces/${tutorialId}-workspace.json`);
       if (stored) {
-        const content = await stored.text();
+        const content = await (stored as any).text();
         return JSON.parse(content);
       }
     } catch (error) {
