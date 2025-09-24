@@ -32,6 +32,7 @@ interface TutorialAssistantProps {
   selectedCode?: string;
   fileName?: string;
   codebaseContext?: any;
+  sessionId?: string;
 }
 
 export function TutorialAssistant({
@@ -42,7 +43,8 @@ export function TutorialAssistant({
   onValidateImplementation,
   selectedCode,
   fileName,
-  codebaseContext
+  codebaseContext,
+  sessionId
 }: TutorialAssistantProps) {
   const [messages, setMessages] = useState<AIMessage[]>([
     {
@@ -86,7 +88,8 @@ export function TutorialAssistant({
             repo: `${tutorial.repoData.owner}/${tutorial.repoData.repo}`,
             step: currentStep,
             tutorial: tutorial.title,
-            codebaseContext
+            codebaseContext,
+            sessionId
           }
         })
       });

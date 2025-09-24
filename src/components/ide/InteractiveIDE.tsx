@@ -529,6 +529,7 @@ export function InteractiveIDE({
             currentStep={currentStep}
             stepNumber={stepNumber}
             codebaseContext={codebaseContext}
+            sessionId={tutorial.id}
             onGetCodeExample={async () => {
               // Call real AI for code examples
               try {

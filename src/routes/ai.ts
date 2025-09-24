@@ -15,6 +15,8 @@ export async function handleAIAssist(request: Request, env: StorageEnv): Promise
         repo: string;
         step: any;
         tutorial: string;
+        codebaseContext?: any;
+        sessionId?: string;
       };
     };
 
@@ -29,12 +31,14 @@ export async function handleAIAssist(request: Request, env: StorageEnv): Promise
 
     const aiService = new AIService(env as Env);
     
-    // Get contextual help from AI
+    // Get contextual help from AI with conversation memory
     const response = await aiService.getContextualHelp(question, {
       currentStep: context.step.title,
       selectedCode: undefined, // Could be added later
       fileName: undefined, // Could be added later
-      repository: context.repo
+      repository: context.repo,
+      codebaseContext: context.codebaseContext,
+      sessionId: context.sessionId
     });
 
     return Response.json({
